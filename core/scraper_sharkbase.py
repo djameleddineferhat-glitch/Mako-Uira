@@ -12,7 +12,6 @@ class WormsChondrichthyesScraper:
     def get_children(self, parent_id):
         url = f"{self.base_url}/AphiaChildrenByAphiaID/{parent_id}"
         try:
-            # On ajoute distinct=false pour être sûr de tout voir
             params = {"distinguished_only": "false"}
             response = requests.get(url, headers=self.headers, params=params, timeout=20)
             if response.status_code == 200:
@@ -30,7 +29,7 @@ class WormsChondrichthyesScraper:
             status = child.get('status')
             cid = child.get('AphiaID')
 
-            # 1. Si on trouve une FAMILLE
+            # 1. Si on trouve une FAMILLE (ou sous-famille pour ne pas perdre le lien)
             if rank == "Family":
                 print(f"  ├── Famille trouvée : {name}")
                 if name not in self.data_fr:
@@ -53,16 +52,17 @@ class WormsChondrichthyesScraper:
                         "lien": f"https://www.marinespecies.org/aphia.php?p=taxdetails&id={cid}"
                     })
 
-            # 4. Sinon, c'est un niveau intermédiaire (Ordre, etc.), on continue de descendre
+            # 4. Sinon, c'est un niveau intermédiaire (Sous-famille, Ordre, etc.), on continue de descendre
+            # On transmet la famille et le genre actuels pour ne pas casser la hiérarchie
             else:
                 self.process_taxon(cid, current_family, current_genre)
         
-        # Petit délai pour laisser respirer l'API
+        # Délai pour l'API
         time.sleep(0.05)
 
     def run(self):
         print(f"🚀 Exploration profonde des Chondrichthyens (ID: {self.root_id})...")
-        print("Remarque : Cela peut prendre quelques minutes car je fouille chaque branche.")
+        print("Remarque : Cela peut prendre plusieurs minutes car la base est vaste.")
         self.process_taxon(self.root_id)
         self.save_data()
 
